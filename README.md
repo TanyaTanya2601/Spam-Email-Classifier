@@ -1,41 +1,97 @@
-📧 Spam Email Classification
+# Spam Email Classifier
 
-A machine learning project that classifies emails as spam or ham (legitimate) using natural language processing and a Naive Bayes classifier.
+A machine learning project that classifies messages as **spam** or **ham (not spam)** using NLP preprocessing, TF-IDF features, and Naive Bayes. Multiple classifiers were benchmarked, and the final Multinomial Naive Bayes model reaches **98.16% accuracy** and **98.21% precision** on the test set.
+
+## Table of Contents
+- [Overview](#overview)
+- [Dataset](#dataset)
+- [Project Workflow](#project-workflow)
+- [Models Compared](#models-compared)
+- [Results](#results)
+- [Project Structure](#project-structure)
+- [Tech Stack](#tech-stack)
+- [Future Improvements](#future-improvements)
 
 ## Overview
 
-Spam emails clutter inboxes and pose security risks such as phishing and malware. This project builds a text classification pipeline to automatically detect spam emails using TF-IDF feature extraction and a probabilistic machine learning model.
+Spam filtering protects users from phishing, scams, and unwanted messages. This project builds an end-to-end pipeline: data cleaning, exploratory analysis, text preprocessing, model comparison, tuning, and model serialization for reuse.
 
- ## Dataset
-Size: 5,572 labeled emails
-Columns: Category (spam/ham), Message (email text)
-Source: emails.csv
+## Dataset
 
-## Tech Stack
-Python
-Pandas
-NLTK
-Scikit-learn (TF-IDF, Naive Bayes, evaluation metrics)
+- **Size:** 5,572 messages (5,157 after removing 415 duplicates)
+- **Columns:** `Category` (ham/spam), `Message`
+- **Class balance (after dedup):** 4,516 ham vs. 641 spam (imbalanced, so precision and recall are tracked, not just accuracy)
 
-## Approach
-Data Preparation — Loaded and explored the dataset, checked for nulls and duplicates.
-Feature Extraction — Converted raw email text into numerical vectors using TfidfVectorizer.
-Train/Test Split — Split data 80/20 for training and evaluation.
-Model Training — Trained a baseline Multinomial Naive Bayes classifier.
-Evaluation — Assessed performance using accuracy, precision, recall, and F1-score.
-Threshold Tuning — Experimented with adjusting the classification threshold to address class imbalance between spam and ham emails.
+Spam messages tend to be longer (mean ≈ 137 characters, ≈ 28 words) than ham (mean ≈ 71 characters, ≈ 17 words).
+
+## Project Workflow
+
+1. **Data cleaning:** label encoding, null check, duplicate removal
+2. **EDA:** class distribution, character/word/sentence counts, histograms, pairplot, correlation heatmap, most common words in spam vs. ham
+3. **Text preprocessing:**
+   - Lowercasing
+   - Tokenization (NLTK)
+   - Removing special characters
+   - Removing stop words and punctuation
+   - Stemming (Porter Stemmer)
+4. **Feature extraction:** TF-IDF (`max_features=3000`) followed by `MinMaxScaler`
+5. **Model building:** compared 11 classifiers
+6. **Model improvement:** capped TF-IDF vocabulary and scaled features for Multinomial NB
+7. **Model export:** saved with `pickle`
+
+## Models Compared
+
+SVC, K-Nearest Neighbors, Multinomial NB, Decision Tree, Logistic Regression, Random Forest, AdaBoost, Bagging, Extra Trees, Gradient Boosting, XGBoost (plus Gaussian/Bernoulli NB in the initial baseline).
+
+**Baseline results (TF-IDF, full vocabulary):**
+
+| Algorithm | Accuracy | Precision |
+|-----------|----------|-----------|
+| Extra Trees | 0.9729 | 1.0000 |
+| Random Forest | 0.9651 | 1.0000 |
+| Multinomial NB | 0.9612 | 1.0000 |
+| KNN | 0.9041 | 1.0000 |
+| SVC | 0.9719 | 0.9804 |
+| XGBoost | 0.9709 | 0.9619 |
+| Decision Tree | 0.9390 | 0.8265 |
 
 ## Results
-Metric	Score
-Accuracy	96.5%
-Precision	100%
-Recall	73.8%
-F1 Score	0.849
 
-Key takeaway: The model achieves perfect precision (no legitimate emails misclassified as spam) but moderate recall (some spam emails go undetected). Since the dataset is imbalanced (far more ham than spam), accuracy alone isn't the best measure of performance — precision and recall together give a clearer picture.
+**Final model: Multinomial Naive Bayes** (TF-IDF with 3,000 features + MinMax scaling)
+
+| Metric | Before | After |
+|--------|--------|-------|
+| Accuracy | 96.12% | **98.16%** |
+| Precision | 1.000 | 0.982 |
+| Recall | 0.685 | **0.866** |
+| F1 Score | 0.813 | **0.921** |
+
+**Confusion matrix (after improvement):**
+
+|  | Predicted Ham | Predicted Spam |
+|--|--------------|----------------|
+| **Actual Ham** | 903 | 2 |
+| **Actual Spam** | 17 | 110 |
+
+The improvement cut missed spam from 40 to 17 messages while keeping false positives (legitimate messages flagged as spam) at just 2.
+
+## Project Structure
+
+Spam-Email-Classifier/
+├── Major-Spam_Email_Classifier.ipynb   # Full analysis and training notebook
+├── model.pkl                           # Trained Multinomial NB model
+├── vectorizer.pkl                      # Fitted TF-IDF vectorizer
+└── README.md
+
+Use the same scikit-learn version for training and loading the pickle files to avoid version warnings.
+
+## Tech Stack
+
+Python · Pandas · NumPy · NLTK · scikit-learn · XGBoost · Matplotlib · Seaborn · Jupyter Notebook
 
 ## Future Improvements
-Address class imbalance using techniques like SMOTE or class weighting
-Try ensemble models (Random Forest, XGBoost) to boost recall
-Experiment with deep learning approaches (CNN/RNN) for richer text representation
-Perform hyperparameter tuning and cross-validation
+
+- Deploy as a web app (Streamlit or Flask)
+- Handle class imbalance (SMOTE, class weights) to push recall higher
+- Try n-grams and word embeddings or transformer-based models
+- Add cross-validation and hyperparameter tuning (GridSearchCV)
